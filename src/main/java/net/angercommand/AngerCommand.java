@@ -46,17 +46,17 @@ public class AngerCommand {
             return 0;
         }
 
-        int angeredEntities = 0;
+        int angeredEntitiesCount = 0;
+        int targetEntitiesCount = 0;
         global_targetEntities = targetEntities;
-
         List<? extends Entity> targetEntitiesList = new ArrayList<>(targetEntities);
 
         for (Entity attackerEntity : attackerEntities) {
-            if (shuffleTargets && attackerEntities.size() > 1) {
-                Collections.shuffle(targetEntitiesList);
-            }
-
             if (attackerEntity instanceof MobEntity attacker && EntityPredicates.EXCEPT_CREATIVE_OR_SPECTATOR.test(attacker)) {
+                if (shuffleTargets && attackerEntities.size() > 1) {
+                    Collections.shuffle(targetEntitiesList);
+                }
+
                 for (Entity targetEntity : targetEntitiesList) {
                     if (targetEntity instanceof LivingEntity target && !attacker.equals(targetEntity) && EntityPredicates.EXCEPT_CREATIVE_OR_SPECTATOR.test(target)) {
                         attacker.setTarget(target);
@@ -67,26 +67,32 @@ public class AngerCommand {
                             warden.increaseAngerAt(target, 150, false);
                             warden.increaseAngerAt(target);
                         }
+                        targetEntitiesCount++;
                     }
                 }
-                angeredEntities++;
+                angeredEntitiesCount++;
             }
         }
 
-        if (angeredEntities == 0) {
+        if (angeredEntitiesCount == 0 || targetEntitiesCount == 0) {
             ctx.getSource().sendError(Text.of("Unable to set attacker(s) nor target(s)"));
             return 0;
         }
 
-        if (angeredEntities > 1) {
-            if (targetEntities.size() > 1) {
-                ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s entities at %s entities", attackerEntities.size(), targetEntities.size()), true);
+        targetEntitiesCount = targetEntitiesCount / angeredEntitiesCount;
+
+        int finalAngeredEntitiesCount = angeredEntitiesCount;
+        int finalTargetEntitiesCount = targetEntitiesCount;
+
+        if (angeredEntitiesCount > 1) {
+            if (targetEntitiesCount > 1) {
+                ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s entities at %s entities", finalAngeredEntitiesCount, targetEntities.size()), true);
             } else {
-                ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s entities at %s", attackerEntities.size(), targetEntities.iterator().next().getDisplayName()), true);
+                ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s entities at %s", finalAngeredEntitiesCount, targetEntities.iterator().next().getDisplayName()), true);
             }
         } else {
-            if (targetEntities.size() > 1) {
-                ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s at %s entities", attackerEntities.iterator().next().getDisplayName(), targetEntities.size()), true);
+            if (targetEntitiesCount > 1) {
+                ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s at %s entities", attackerEntities.iterator().next().getDisplayName(), finalTargetEntitiesCount), true);
             } else {
                 ctx.getSource().sendFeedback(() -> Text.translatable("Angered %s at %s", attackerEntities.iterator().next().getDisplayName(), targetEntities.iterator().next().getDisplayName()), true);
             }
