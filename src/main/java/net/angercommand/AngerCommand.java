@@ -5,15 +5,19 @@ import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.WardenEntity;
+import net.minecraft.entity.mob.*;
+import net.minecraft.entity.passive.*;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
@@ -60,12 +64,12 @@ public class AngerCommand {
                 for (Entity targetEntity : targetEntitiesList) {
                     if (targetEntity instanceof LivingEntity target && !attacker.equals(targetEntity) && EntityPredicates.EXCEPT_CREATIVE_OR_SPECTATOR.test(target)) {
                         attacker.setTarget(target);
+                        attacker.setAttacking(true);
                         attacker.getBrain().remember(MemoryModuleType.ANGRY_AT, target.getUuid(), 600L);
                         attacker.getBrain().remember(MemoryModuleType.ATTACK_TARGET, target, 600L);
 
                         if (attacker instanceof WardenEntity warden) {
                             warden.increaseAngerAt(target, 150, false);
-                            warden.increaseAngerAt(target);
                         }
                         targetEntitiesCount++;
                     }
@@ -115,13 +119,27 @@ public class AngerCommand {
 
         for (Entity attackerEntity : attackerEntities) {
             if (attackerEntity instanceof MobEntity attacker && EntityPredicates.EXCEPT_CREATIVE_OR_SPECTATOR.test(attacker)) {
-                attacker.setTarget(null);
-                attacker.getBrain().forget(MemoryModuleType.ANGRY_AT);
-                attacker.getBrain().forget(MemoryModuleType.ATTACK_TARGET);
+                for (Entity targetEntity : global_targetEntities) {
+                    if (targetEntity instanceof LivingEntity target) {
+                        attacker.setTarget(null);
+                        attacker.getBrain().forget(MemoryModuleType.ANGRY_AT);
+                        attacker.getBrain().forget(MemoryModuleType.ATTACK_TARGET);
 
-                if (attacker instanceof WardenEntity warden) {
-                    for (Entity targetEntity : global_targetEntities) {
-                        warden.removeSuspect(targetEntity);
+                        if (attacker instanceof BeeEntity beeEntity) {
+                            beeEntity.stopAnger();
+                        } else if (attacker instanceof EndermanEntity endermanEntity) {
+                            endermanEntity.stopAnger();
+                        } else if (attacker instanceof IronGolemEntity ironGolemEntity) {
+                            ironGolemEntity.stopAnger();
+                        } else if (attacker instanceof PolarBearEntity polarBearEntity) {
+                            polarBearEntity.stopAnger();
+                        } else if (attacker instanceof WardenEntity warden) {
+                            warden.removeSuspect(target);
+                        } else if (attacker instanceof WolfEntity wolfEntity) {
+                            wolfEntity.stopAnger();
+                        } else if (attacker instanceof ZombifiedPiglinEntity zombifiedPiglinEntity) {
+                            zombifiedPiglinEntity.stopAnger();
+                        }
                     }
                 }
                 calmedEntities++;
@@ -139,5 +157,9 @@ public class AngerCommand {
         }
 
         return 1;
+    }
+
+    private static EntityType getEntityType(Entity entity) {
+        return entity.getType();
     }
 }
