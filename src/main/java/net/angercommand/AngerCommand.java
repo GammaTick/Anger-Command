@@ -158,8 +158,4 @@ public class AngerCommand {
 
         return 1;
     }
-
-    private static EntityType getEntityType(Entity entity) {
-        return entity.getType();
-    }
 }
